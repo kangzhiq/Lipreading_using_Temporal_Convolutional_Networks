@@ -55,7 +55,7 @@ class MyDataset(object):
         return os.path.splitext( instance_id )[0]
 
     def _get_label_from_path(self, x):
-        return x.split('/')[self.label_idx]
+        return x.split('\\')[self.label_idx]
 
     def _get_files_for_partition(self):
         # get rgb/mfcc file paths
@@ -73,8 +73,8 @@ class MyDataset(object):
         self._data_files.extend( glob.glob( search_str_mp4 ) )
 
         # If we are not using the full set of labels, remove examples for labels not used
-        self._data_files = [ f for f in self._data_files if f.split('/')[self.label_idx] in self._labels ]
-
+        self._data_files = [ f for f in self._data_files if f.split('\\')[self.label_idx] in self._labels ]
+        
     def load_data(self, filename):
 
         try:

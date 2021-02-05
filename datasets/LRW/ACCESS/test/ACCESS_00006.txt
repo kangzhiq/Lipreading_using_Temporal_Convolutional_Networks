@@ -1,0 +1,5 @@
+Disk reference: 6246940597167174229 
+Channel: BBC One HD 
+Program start: 2016-02-03 06:00:00 +0000 
+Clip start: 2610.12 seconds 
+Duration: 0.53 seconds 

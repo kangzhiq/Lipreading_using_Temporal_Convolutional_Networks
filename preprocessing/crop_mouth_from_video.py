@@ -15,7 +15,7 @@ from collections import deque
 
 from utils import *
 from transform import *
-
+import face_alignment
 
 def load_args(default_config=None):
     parser = argparse.ArgumentParser(description='Lipreading Pre-processing')
@@ -46,7 +46,7 @@ args = load_args()
 STD_SIZE = (256, 256)
 mean_face_landmarks = np.load(args.mean_face)
 stablePntsIDs = [33, 36, 39, 42, 45]
-
+fa = face_alignment.FaceAlignment(face_alignment.LandmarksType._2D, device='cuda')
 
 def crop_patch( video_pathname, landmarks):
 
@@ -133,22 +133,44 @@ for filename_idx, line in enumerate(lines):
     print('idx: {} \tProcessing.\t{}'.format(filename_idx, filename))
 
     video_pathname = os.path.join(args.video_direc, filename+'.mp4')
-    landmarks_pathname = os.path.join(args.landmark_direc, filename+'.npz')
+    #landmarks_pathname = os.path.join(args.landmark_direc, filename+'.npy')
     dst_pathname = os.path.join( args.save_direc, filename+'.npz')
 
     assert os.path.isfile(video_pathname), "File does not exist. Path input: {}".format(video_pathname)
-    assert os.path.isfile(landmarks_pathname), "File does not exist. Path input: {}".format(landmarks_pathname)
+    #assert os.path.isfile(landmarks_pathname), "File does not exist. Path input: {}".format(landmarks_pathname)
 
     if os.path.exists(dst_pathname):
         continue
 
-    multi_sub_landmarks = np.load( landmarks_pathname, allow_pickle=True)['data']
-    landmarks = [None] * len( multi_sub_landmarks)
-    for frame_idx in range(len(landmarks)):
+    # Detection landmarks with face_alignment package
+    vidcap = cv2.VideoCapture(video_pathname)
+    init_frame = []
+
+    count = 0
+    success, image = vidcap.read()
+    u_max, v_max = image.shape[:2]
+    while success:
+        init_frame.append(image)
+        success, image = vidcap.read()
+        count += 1
+    landmarks = [None] * len(init_frame)
+    for i in range(len(init_frame)):
         try:
-            landmarks[frame_idx] = multi_sub_landmarks[frame_idx][int(person_id)]['facial_landmarks']
-        except IndexError:
+            landmarks[i] = fa.get_landmarks(init_frame[i])[0]
+        except:
             continue
+    #with open(landmarks_pathname, 'rb') as f:E
+    #    multi_sub_landmarks = np.load(f)
+    #multi_sub_landmarks = np.load( landmarks_pathname, allow_pickle=True)['data']
+    #landmarks = [None] * len( multi_sub_landmarks)
+    #landmarks = [None] * multi_sub_landmarks.shape[0]
+    #for frame_idx in range(len(landmarks)):
+    #    try:
+#            landmarks[frame_idx] = multi_sub_landmarks[frame_idx][int(person_id)]['facial_landmarks']
+    #        landmarks[frame_idx] = multi_sub_landmarks[frame_idx, :, :]
+
+    #    except IndexError:
+    #        continue
 
     # -- pre-process landmarks: interpolate frames not being detected.
     preprocessed_landmarks = landmarks_interpolate(landmarks)

@@ -1,0 +1,5 @@
+Disk reference: 6240145099911371200 
+Channel: BBC Two HD 
+Program start: 2016-01-15 22:30:00 +0000 
+Clip start: 405.80 seconds 
+Duration: 0.50 seconds 
