@@ -53,7 +53,7 @@ def get_data_loaders(args):
     dset_loaders = {x: torch.utils.data.DataLoader(
                         dsets[x],
                         batch_size=args.batch_size,
-                        shuffle=True,
+                        shuffle=False,
                         collate_fn=pad_packed_collate,
                         pin_memory=False,
                         num_workers=4,

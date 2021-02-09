@@ -6,3 +6,5 @@ python main.py --config-path "configs\lrw_resnet18_mstcn.json" --model-path "mod
 python main.py --config-path "configs\lrw_resnet18_mstcn.json" --model-path "models\lrw_resnet18_mstcn_adamw_s3.pth.tar" --data-dir "datasets\LRW_h96w96_mouth_crop_gray"
 
 python main.py --config-path "configs\lrw_resnet18_mstcn.json" --model-path "models\lrw_resnet18_mstcn_adamw_s3.pth.tar" --data-dir "datasets\LRW_h96w96_mouth_crop_gray" --label-path="./labels/500WordsSortedList_partial.txt"
+
+singularity shell --nv --bind /local_scratch/zkang/:/mnt/ img_pytorch.sif/

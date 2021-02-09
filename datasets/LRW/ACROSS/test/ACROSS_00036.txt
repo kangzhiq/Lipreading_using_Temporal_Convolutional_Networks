@@ -1,0 +1,5 @@
+Disk reference: 6273102102090994753 
+Channel: BBC Four HD 
+Program start: 2016-04-13 19:00:00 +0100 
+Clip start: 1602.60 seconds 
+Duration: 0.24 seconds 
