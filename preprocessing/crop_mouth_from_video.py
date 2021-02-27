@@ -181,7 +181,15 @@ lines = list(filter(lambda x: 'test' == x.split('/')[-2], lines)) if args.testse
 for filename_idx, line in enumerate(lines):
 
     filename, person_id = line.split(',')
+    label = line.split("/")[0]
     print('idx: {} \tProcessing.\t{}'.format(filename_idx, filename))
+
+    if not os.path.exists(os.path.join(args.save_direc, label, 'train')):
+        os.mkdir(os.path.join(args.save_direc, label, 'train'))
+    if not os.path.exists(os.path.join(args.save_direc, label, 'test')):
+        os.mkdir(os.path.join(args.save_direc, label, 'test'))
+    if not os.path.exists(os.path.join(args.save_direc, label, 'val')):
+        os.mkdir(os.path.join(args.save_direc, label, 'val'))
 
     video_pathname = os.path.join(args.video_direc, filename+'.mp4')
     #landmarks_pathname = os.path.join(args.landmark_direc, filename+'.npy')
