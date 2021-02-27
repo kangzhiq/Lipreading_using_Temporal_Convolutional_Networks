@@ -16,6 +16,7 @@ from collections import deque
 from utils import *
 from transform import *
 import face_alignment
+import sys
 
 def load_args(default_config=None):
     parser = argparse.ArgumentParser(description='Lipreading Pre-processing')
@@ -77,6 +78,7 @@ def crop_patch( video_pathname, landmarks):
                                            mean_face_landmarks[stablePntsIDs, :],
                                            cur_frame,
                                            STD_SIZE)
+
             trans_landmarks = trans(cur_landmarks)
             # -- crop mouth patch
             sequence.append( cut_patch( trans_frame,
@@ -90,6 +92,55 @@ def crop_patch( video_pathname, landmarks):
                 trans_frame = apply_transform( trans, cur_frame, STD_SIZE)
                 # -- transform landmarks
                 trans_landmarks = trans(q_landmarks.popleft())
+                # -- crop mouth patch
+                sequence.append( cut_patch( trans_frame,
+                                            trans_landmarks[args.start_idx:args.stop_idx],
+                                            args.crop_height//2,
+                                            args.crop_width//2,))
+            return np.array(sequence)
+        frame_idx += 1
+    return None
+
+
+def crop_patch_frontal( video_pathname, landmarks):
+
+    """Crop mouth patch
+    :param str video_pathname: pathname for the video_dieo
+    :param list landmarks: interpolated landmarks
+    """
+
+    frame_idx = 0
+    frame_gen = read_video(video_pathname)
+    while True:
+        try:
+            frame = frame_gen.__next__() ## -- BGR
+        except StopIteration:
+            break
+        if frame_idx == 0:
+            q_frame, q_landmarks = deque(), deque()
+            sequence = []
+
+        q_landmarks.append(landmarks[frame_idx])
+        q_frame.append(frame)
+        if len(q_frame) == args.window_margin:
+            smoothed_landmarks = np.mean(q_landmarks, axis=0)
+            cur_landmarks = q_landmarks.popleft()
+            cur_frame = q_frame.popleft()
+            # -- affine transformation
+            trans_frame= cur_frame
+            trans_landmarks = cur_landmarks
+            # -- crop mouth patch
+            sequence.append( cut_patch( trans_frame,
+                                        trans_landmarks[args.start_idx:args.stop_idx],
+                                        args.crop_height//2,
+                                        args.crop_width//2,))
+        if frame_idx == len(landmarks)-1:
+            while q_frame:
+                cur_frame = q_frame.popleft()
+                # -- transform frame
+                trans_frame = cur_frame
+                # -- transform landmarks
+                trans_landmarks = q_landmarks.popleft()
                 # -- crop mouth patch
                 sequence.append( cut_patch( trans_frame,
                                             trans_landmarks[args.start_idx:args.stop_idx],
@@ -139,8 +190,8 @@ for filename_idx, line in enumerate(lines):
     assert os.path.isfile(video_pathname), "File does not exist. Path input: {}".format(video_pathname)
     #assert os.path.isfile(landmarks_pathname), "File does not exist. Path input: {}".format(landmarks_pathname)
 
-    if os.path.exists(dst_pathname):
-        continue
+    #if os.path.exists(dst_pathname):
+    #    continue
 
     # Detection landmarks with face_alignment package
     vidcap = cv2.VideoCapture(video_pathname)
@@ -178,7 +229,7 @@ for filename_idx, line in enumerate(lines):
         continue
 
     # -- crop
-    sequence = crop_patch(video_pathname, preprocessed_landmarks)
+    sequence = crop_patch_frontal(video_pathname, preprocessed_landmarks)
     assert sequence is not None, "cannot crop from {}.".format(filename)
 
     # -- save

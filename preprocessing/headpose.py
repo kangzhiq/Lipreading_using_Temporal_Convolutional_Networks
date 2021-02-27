@@ -33,7 +33,7 @@ def get_head_pose(frame, fa):
     angle_R = angle_R/np.pi * 180
 
     return angle_R
-for label in ["ACCUSED", "ACROSS", "ACTION", "ACTUALLY", "AFFAIRS"]:
+for label in ['AFFECTED', 'AFRICA', 'AFTER', 'AFTERNOON', 'AGAIN', 'AGAINST']:
     with open("head_pose/{}.txt".format(label), "w") as file:
         for ind_vid in range(1, 51):
             video_path = "../datasets/LRW/{}/test/{}_{:05d}.mp4".format(label, label,ind_vid)

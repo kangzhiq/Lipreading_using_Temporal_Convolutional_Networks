@@ -11,3 +11,5 @@ datasets/outputs
 *.mp4
 *.npz
 *.mat
+*.jpg
+datasets/

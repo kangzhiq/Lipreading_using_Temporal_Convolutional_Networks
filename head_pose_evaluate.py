@@ -15,6 +15,8 @@ from lipreading.model import Lipreading
 from lipreading.dataloaders import get_data_loaders, get_preprocessing_pipelines
 from lipreading.utils import read_txt_lines
 
+import csv
+
 def load_args(default_config=None):
     parser = argparse.ArgumentParser(description='Pytorch Lipreading ')
     # -- dataset config
@@ -65,7 +67,7 @@ def extract_feats(model):
 def load_head_pose():
     labels = read_txt_lines(args.label_path)
     head_pose_dict = {}
-    for idx_label in range(10):
+    for idx_label in range(16):
         label = labels[idx_label]
         filepath = 'preprocessing/head_pose/{}.txt'.format(label)
         with open(filepath) as myfile:
@@ -82,20 +84,26 @@ def evaluate(model, dset_loader):
     head_pose_acc = np.zeros(6)
     sample_count = 0
 
-    with torch.no_grad():
-        for batch_idx, (input, lengths, labels) in enumerate(tqdm(dset_loader)):
-            logits = model(input.unsqueeze(1).cuda(), lengths=lengths)
-            _, preds = torch.max(F.softmax(logits, dim=1).data, dim=1)
-            res = preds.eq(labels.cuda().view_as(preds))
-            running_corrects += res.sum().item()
+    with open('results.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=',')
+        writer.writerow(["Label", "idx", "Head pose", "Acc."])
+        with torch.no_grad():
+            for batch_idx, (input, lengths, labels) in enumerate(tqdm(dset_loader)):
+                logits = model(input.unsqueeze(1).cuda(), lengths=lengths)
+                _, preds = torch.max(F.softmax(logits, dim=1).data, dim=1)
+                res = preds.eq(labels.cuda().view_as(preds))
+                running_corrects += res.sum().item()
+                acc = preds.eq(labels.cuda().view_as(preds))
 
-            # Divide the predictions into head pose categories
-            for i, label in enumerate(labels):
-                sample_idx = sample_count % 50
-                head_pose_type = int(float(head_pose_dict[int(label)][sample_idx]))
-                head_pose_count[head_pose_type] += 1
-                head_pose_acc[head_pose_type] += res[i]
-                sample_count += 1
+
+                # Divide the predictions into head pose categories
+                for i, label in enumerate(labels):
+                    sample_idx = sample_count % 50
+                    head_pose_type = int(float(head_pose_dict[int(label)][sample_idx]))
+                    head_pose_count[head_pose_type] += 1
+                    head_pose_acc[head_pose_type] += res[i]
+                    sample_count += 1
+                    writer.writerow([int(label), sample_idx+1, head_pose_type, int(res[i])])
 
     print("Sample count: ", sample_count)
     print(head_pose_count)
