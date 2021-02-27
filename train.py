@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-
+import torch.optim.lr_scheduler as lr_scheduler
 # -- ignore the warninig from librosa
 import warnings
 warnings.filterwarnings('ignore')
@@ -104,8 +104,8 @@ def get_model():
 
 def train(model, dset_loader):
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
-
+    optimizer = optim.Adam(model.parameters(), lr=0.0003, weight_decay =0.0001)
+    scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=10, eta_min=0)
     for epoch in range(20):  # loop over the dataset multiple times
 
         running_loss = 0.0
@@ -122,13 +122,14 @@ def train(model, dset_loader):
             loss = criterion(outputs, labels.cuda())
             loss.backward()
             optimizer.step()
-
+            scheduler.step()
             # print statistics
             running_loss += loss.item()
-            if i % 2 == 0:    # print every 2000 mini-batches
+            if i % 5 == 0:    # print every 2000 mini-batches
                 print('[%d, %5d] loss: %.3f' %
                       (epoch + 1, i + 1, running_loss / 2000))
                 running_loss = 0.0
+
 
     print('Finished Training')
 
@@ -140,15 +141,16 @@ def main():
         "'.tar' model path does not exist. Path input: {}".format(args.model_path)
 
     model = get_model()
-
     model.load_state_dict( torch.load(args.model_path)["model_state_dict"], strict=True)
+    for param in model.parameters()[:-20]:
+        param.requires_grad = False
 
     if args.mouth_patch_path:
         save2npz( args.mouth_embedding_out_path, data = extract_feats(model).cpu().detach().numpy())
         return
     # -- get dataset iterators
     dset_loaders = get_data_loaders(args)
-    train(model, dset_loaders['test'])
+    train(model, dset_loaders['train'])
 
 if __name__ == '__main__':
     main()
