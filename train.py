@@ -142,9 +142,13 @@ def main():
 
     model = get_model()
     model.load_state_dict( torch.load(args.model_path)["model_state_dict"], strict=True)
-    for param in model.parameters()[:-20]:
+    for param in model.parameters():
         param.requires_grad = False
 
+    model.tcn.requires_grad_()
+    for param in model.parameters():
+        print(param.requires_grad)
+    return
     if args.mouth_patch_path:
         save2npz( args.mouth_embedding_out_path, data = extract_feats(model).cpu().detach().numpy())
         return
