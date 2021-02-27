@@ -184,6 +184,8 @@ for filename_idx, line in enumerate(lines):
     label = line.split("/")[0]
     print('idx: {} \tProcessing.\t{}'.format(filename_idx, filename))
 
+    if not os.path.exists(os.path.join(args.save_direc, label)):
+        os.mkdir(os.path.join(args.save_direc, label))
     if not os.path.exists(os.path.join(args.save_direc, label, 'train')):
         os.mkdir(os.path.join(args.save_direc, label, 'train'))
     if not os.path.exists(os.path.join(args.save_direc, label, 'test')):
