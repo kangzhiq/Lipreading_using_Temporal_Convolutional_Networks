@@ -4,6 +4,7 @@ import os
 import argparse
 import numpy as np
 from tqdm import tqdm
+import copy
 
 import torch
 import torch.nn as nn
@@ -104,32 +105,68 @@ def get_model():
 
 def train(model, dset_loader):
     criterion = nn.CrossEntropyLoss()
+    nb_epoch = 20
     optimizer = optim.Adam(model.parameters(), lr=0.0003, weight_decay =0.0001)
     scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=10, eta_min=0)
-    for epoch in range(20):  # loop over the dataset multiple times
+    dataset_sizes = {x: len(dset_loader[x]) for x in ['train', 'val']}
+    best_model_wts = copy.deepcopy(model.state_dict())
+    best_acc = 0.0
+    for epoch in range(nb_epoch):  # loop over the dataset multiple times
 
         running_loss = 0.0
-        for i, (input, lengths, labels) in enumerate(tqdm(dset_loader)):
-#        for i, data in enumerate(dset_loaders['test'], 0):
-            # get the inputs; data is a list of [inputs, labels]
-#            inputs, labels = data
+        running_corrects = 0.0
+        for phase in ['train', 'val']:
+            if phase == "train":
+                model.train()
+            else:
+                model.eval()
 
-            # zero the parameter gradients
-            optimizer.zero_grad()
+            for i, (input, lengths, labels) in enumerate(tqdm(dset_loader[phase])):
+    #        for i, data in enumerate(dset_loaders['test'], 0):
+                # get the inputs; data is a list of [inputs, labels]
+    #            inputs, labels = data
+                # zero the parameter gradients
+                optimizer.zero_grad()
 
-            # forward + backward + optimize
-            outputs = model(input.unsqueeze(1).cuda(), lengths=lengths)
-            loss = criterion(outputs, labels.cuda())
-            loss.backward()
-            optimizer.step()
-            scheduler.step()
-            # print statistics
-            running_loss += loss.item()
-            if i % 5 == 0:    # print every 2000 mini-batches
-                print('[%d, %5d] loss: %.3f' %
-                      (epoch + 1, i + 1, running_loss / 2000))
-                running_loss = 0.0
+                with torch.set_grad_enabled(phase == 'train'):
+                    # forward + backward + optimize
+                    outputs = model(input.unsqueeze(1).cuda(), lengths=lengths)
+                    _, preds = torch.max(F.softmax(outputs, dim=1).data, dim=1)
+                    loss = criterion(outputs, labels.cuda())
 
+                    running_corrects += preds.eq(labels.cuda().view_as(preds)).sum().item()
+                    running_loss += loss.item()
+
+                    if phase == "train":
+                        loss.backward()
+                        optimizer.step()
+
+
+                if phase == "train":
+                    scheduler.step()
+
+#                    # print statistics
+#                if i % 10 == 0:    # print every 2000 mini-batches
+#                    print('[%d, %5d] loss: %.3f' %
+#                          (epoch + 1, i + 1, running_loss / 10))
+#                    running_loss = 0.0
+
+        epoch_loss = running_loss / dataset_sizes[phase]
+        epoch_acc = running_corrects.double() / dataset_sizes[phase]
+
+        print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
+
+        if phase == 'val' and epoch_acc > best_acc:
+            print("Val acc. from {} to {}, updated".format(best_acc, epoch_acc))
+            best_acc = epoch_acc
+            best_model_wts = copy.deepcopy(model.state_dict())
+
+
+    torch.save({
+            'epoch': nb_epoch,
+            'model_state_dict': best_model_wts,
+            'optimizer_state_dict': optimizer.state_dict(),
+            'loss': loss}, "Finetune/test.pth.tar")
 
     print('Finished Training')
 
@@ -154,7 +191,7 @@ def main():
         return
     # -- get dataset iterators
     dset_loaders = get_data_loaders(args)
-    train(model, dset_loaders['train'])
+    train(model, dset_loaders)
 
 if __name__ == '__main__':
     main()
