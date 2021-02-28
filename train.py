@@ -113,14 +113,14 @@ def train(model, dset_loader):
     best_acc = 0.0
     for epoch in range(nb_epoch):  # loop over the dataset multiple times
 
-        running_loss = 0.0
-        running_corrects = 0.0
+
         for phase in ['train', 'val']:
             if phase == "train":
                 model.train()
             else:
                 model.eval()
-
+            running_loss = 0.0
+            running_corrects = 0.0
             for i, (input, lengths, labels) in enumerate(tqdm(dset_loader[phase])):
     #        for i, data in enumerate(dset_loaders['test'], 0):
                 # get the inputs; data is a list of [inputs, labels]
@@ -151,22 +151,22 @@ def train(model, dset_loader):
 #                          (epoch + 1, i + 1, running_loss / 10))
 #                    running_loss = 0.0
 
-        epoch_loss = running_loss / dataset_sizes[phase]
-        epoch_acc = running_corrects.double() / dataset_sizes[phase]
+                epoch_loss = running_loss / dataset_sizes[phase]
+                epoch_acc = running_corrects / dataset_sizes[phase]
 
-        print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
+                print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
 
-        if phase == 'val' and epoch_acc > best_acc:
-            print("Val acc. from {} to {}, updated".format(best_acc, epoch_acc))
-            best_acc = epoch_acc
-            best_model_wts = copy.deepcopy(model.state_dict())
+                if phase == 'val' and epoch_acc > best_acc:
+                    print("Val acc. from {} to {}, updated".format(best_acc, epoch_acc))
+                    best_acc = epoch_acc
+                    best_model_wts = copy.deepcopy(model.state_dict())
 
 
     torch.save({
             'epoch': nb_epoch,
             'model_state_dict': best_model_wts,
             'optimizer_state_dict': optimizer.state_dict(),
-            'loss': loss}, "Finetune/test.pth.tar")
+            'loss': loss}, "Finetune/test_val.pth.tar")
 
     print('Finished Training')
 
